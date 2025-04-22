@@ -6,3 +6,4 @@ output2.nmea
 testDownload.json
 .env
 gps-sensor/local.settings.json
+web/index_key.html
