@@ -19,7 +19,7 @@
         "https://gpsthp314159.blob.core.windows.net/gps-data/?restype=container&comp=list";
 
       const subscriptionKey =
-        "AGneN6N4kMhBMLJKQ6T0eAqBBSWg89wdgLPgh22s6MXoup4TNzjRJQQJ99BDAC5RqLJiYoCcAAAgAZMP3p3e";
+        "<subscription_key>";
 
       const map_center = [106.61411702406991, 11.107633851142298];
       const map_zoom = 16;
@@ -36,9 +36,9 @@
       let blobList;
 
       init();
-
-      // Set an interval to refresh the map data every 10 seconds
-      setInterval(init, 10000);
+        
+      // reload map every 5 seconds
+      setInterval(init, 5000);
 
       async function init() {
         const response = await fetch(gpsDataURL);
