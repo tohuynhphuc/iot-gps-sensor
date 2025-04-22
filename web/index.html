@@ -37,8 +37,8 @@
 
       init();
         
-      // reload map every 5 seconds
-      setInterval(init, 5000);
+      // reload map every 1 seconds
+      setInterval(init, 1000);
 
       async function init() {
         const response = await fetch(gpsDataURL);
