@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.css"
+      type="text/css"
+    />
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.js"></script>
+  </head>
+  <body>
+    <progress id="progress" style="width: 100%"></progress>
+    <div id="progressText" style="text-align: center"></div>
+    <div id="progressDetails"></div>
+    <div id="myMap" style="width: 100%; height: 100vh" hidden></div>
+
+    <script type="text/javascript">
+      const gpsDataURL =
+        "https://gpsthp314159.blob.core.windows.net/gps-data/?restype=container&comp=list";
+
+      const subscriptionKey =
+        "AGneN6N4kMhBMLJKQ6T0eAqBBSWg89wdgLPgh22s6MXoup4TNzjRJQQJ99BDAC5RqLJiYoCcAAAgAZMP3p3e";
+
+      const map_center = [106.61411702406991, 11.107633851142298];
+      const map_zoom = 16;
+
+      const myMap = document.getElementById("myMap");
+      const progress = document.getElementById("progress");
+      const progressText = document.getElementById("progressText");
+      const progressDetails = document.getElementById("progressDetails");
+
+      let map;
+      let features = [];
+      let loadedUrls = new Set();
+      let dataSource;
+      let blobList;
+
+      init();
+
+      // Set an interval to refresh the map data every 10 seconds
+      setInterval(init, 10000);
+
+      async function init() {
+        const response = await fetch(gpsDataURL);
+        const xmlStr = await response.text();
+        const xml = new window.DOMParser().parseFromString(xmlStr, "text/xml");
+        blobList = Array.from(xml.querySelectorAll("Url")).map(
+          (el) => el.textContent
+        );
+
+        // Wait for all new GPS data to load
+        await Promise.all(blobList.map(loadJSON));
+
+        progressDetails.innerText = `All points loaded`;
+
+        myMap.hidden = false;
+
+        if (!map) {
+          map = new atlas.Map("myMap", {
+            center: map_center,
+            zoom: map_zoom,
+            authOptions: {
+              authType: "subscriptionKey",
+              subscriptionKey: subscriptionKey,
+            },
+          });
+
+          map.events.add("ready", function () {
+            dataSource = new atlas.source.DataSource();
+            map.sources.add(dataSource);
+            map.layers.add(new atlas.layer.BubbleLayer(dataSource));
+            dataSource.add(features);
+
+            progress.hidden = true;
+            progressText.hidden = true;
+            progressDetails.hidden = true;
+          });
+        } else if (dataSource) {
+          dataSource.clear(); // Clear existing features
+          dataSource.add(features); // Add updated features
+        }
+      }
+
+      async function loadJSON(file) {
+        if (loadedUrls.has(file)) return;
+
+        const response = await fetch(file);
+        const gps = await response.json();
+
+        const lon = parseFloat(gps.gps.lon);
+        const lat = parseFloat(gps.gps.lat);
+        if (!isNaN(lon) && !isNaN(lat)) {
+          features.push(
+            new atlas.data.Feature(new atlas.data.Point([lon, lat]))
+          );
+          progressText.innerText = `${features.length} / ${blobList.length}`;
+          progress.setAttribute("value", features.length / blobList.length);
+          progressDetails.innerText = `Point added: Longitude = ${lon}, Latitude = ${lat}\n`;
+        } else {
+          progressDetails.innerText = `Point added: Longitude = ${lon}, Latitude = ${lat}\n`;
+        }
+        loadedUrls.add(file);
+      }
+    </script>
+  </body>
+</html>
